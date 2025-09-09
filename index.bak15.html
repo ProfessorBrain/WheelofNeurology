@@ -110,23 +110,6 @@ header small{color:var(--muted)}
 }
 .cell.filler{filter: saturate(.8) brightness(.9)}
 
-
-.cell.letter{background:#ffffff !important; border-color:#cccccc !important; color:#000000 !important; text-shadow:none !important}
-.cell.letter:not(.revealed)::before{content:none !important}
-
-
-
-#startModal .dialog{max-width:520px;width:90%;margin:0 auto}
-
-
-#startModal .dialog footer{display:flex;justify-content:center}
-
-
-#startModal .options{flex-wrap:wrap;justify-content:center}
-
-
-/* Brand logo */
-.brand img{height:36px;display:block}
 /* Keyboard */
 .keyboard{display:grid;grid-template-columns:repeat(13,1fr);gap:8px}
 .keyboard button{
@@ -158,18 +141,13 @@ header small{color:var(--muted)}
 .overlayPointer{position:fixed;z-index:65;width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-bottom:26px solid var(--accent);transform:rotate(180deg);pointer-events:none;}
 
 footer{color:var(--muted);text-align:center;padding:6px 0 12px 0}
-
-
-/* Remove dim background/shadow around fullscreen wheel overlay */
-.wheelWrap.fullscreen{background:transparent !important; box-shadow:none !important;}
-
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1 class="brand"><img src="wheelofneurology-logo.png" alt="Wheel of Neurology"></h1>
-    <small></small>
+    <h1>Wheel of Neurology</h1>
+    <small>canvas preview • multiplayer prototype</small>
   </header>
 
   <div class="grid">
@@ -206,7 +184,7 @@ footer{color:var(--muted);text-align:center;padding:6px 0 12px 0}
     </div>
   </div>
 
-  <footer>created by micah etter, md</footer>
+  <footer>created by micah etter, md • v1.2 stable</footer>
 </div>
 
 <!-- CLUE MODAL -->
@@ -381,12 +359,7 @@ footer{color:var(--muted);text-align:center;padding:6px 0 12px 0}
 
   // -------- Helpers --------
   const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-  
-  // Count alphabetic letters only (ignore spaces/punct)
-  function letterCount(s){
-    return (String(s||'').match(/[A-Za-z]/g)||[]).length;
-  }
-const VOWELS = new Set("AEIOU".split(""));
+  const VOWELS = new Set("AEIOU".split(""));
   const sliceCount = wheelWedges.length;
   const sliceAngle = (Math.PI*2)/sliceCount;
 
@@ -467,8 +440,6 @@ const VOWELS = new Set("AEIOU".split(""));
         const classes=["cell"];
         if(cell.type==="filler") classes.push("filler");
         if(cell.type==="space") classes.push("space");
-        if(cell.type==="letter") classes.push("letter");
-        if(cell.type==="punct") classes.push("punct");
         if((cell.type==="letter"||cell.type==="punct") && cell.revealed) classes.push("revealed");
         el.className=classes.join(" ");
         el.textContent=(cell.type==="letter"&&cell.revealed)?cell.ch:(cell.type==="punct"?cell.ch:"");
@@ -598,19 +569,7 @@ const VOWELS = new Set("AEIOU".split(""));
     ctx.restore();
   }
 
-  
-  function wedgeAtPointer(){
-    const twoPI = Math.PI*2;
-    const pointer = -Math.PI/2;               // fixed top pointer
-    let a = pointer - state.rotation;         // wheel angle under pointer in wheel's local coords
-    a = ((a % twoPI) + twoPI) % twoPI;       // normalize [0, 2π)
-    // Choose the wedge whose CENTER is nearest the pointer
-    let idx = Math.floor((a + sliceAngle/2) / sliceAngle);
-    idx = ((idx % wheelWedges.length) + wheelWedges.length) % wheelWedges.length;
-    return idx;
-  }
-
-function drawPreview(){
+  function drawPreview(){
     const tmp=document.createElement('canvas');
     const W=canvas.width, H=canvas.height;
     tmp.width=W; tmp.height=H;
@@ -633,17 +592,7 @@ function drawPreview(){
     LETTERS.forEach(L=>{
       const b=document.createElement('button');
       b.textContent=L;
-      let enable = enabled && !state.guessed.has(L);
-      if(enabled){
-        if(state.canGuessConsonant){
-          enable = enable && !VOWELS.has(L); // consonants only
-        } else if(state.canBuyVowel){
-          enable = enable && VOWELS.has(L);  // vowels only
-        } else {
-          enable = false; // nothing selectable
-        }
-      }
-      b.disabled = !enable;
+      b.disabled = !enabled || state.guessed.has(L);
       b.addEventListener('click', ()=>{
         if(b.disabled) return;
         if(state.canGuessConsonant && !VOWELS.has(L)){
@@ -654,7 +603,7 @@ function drawPreview(){
       });
       keyboardEl.appendChild(b);
     });
-}
+  }
 
   function revealMatching(L){
     let hits=0;
@@ -689,9 +638,9 @@ function drawPreview(){
       setStatus(`${CPL()} found ${hits} × ${L} for $${dollars(earned)}.`);
       if(allRevealed()){ celebrateWin(); return; }
       state.canGuessConsonant=false;
-      resetKeyboard(false);
-      buyVowelBtn.disabled = (state.players>1) || (state.banks[state.currentPlayer] < state.vowelPrice);
-      spinBtn.disabled = false;
+      state.canBuyVowel = (state.players===1) && (state.banks[state.currentPlayer] >= state.vowelPrice);
+      resetKeyboard(true);
+      buyVowelBtn.disabled = !state.canBuyVowel;
     } else {
       if(state.players===1){
       setStatus(`No ${L}'s. Spin again.`);
@@ -712,9 +661,8 @@ function drawPreview(){
     const hits = revealMatching(L);
     setStatus(`Purchased ${L} for $${state.vowelPrice}. ${hits>0?hits+' revealed.':'None found.'}`);
     state.canBuyVowel=false;
+    buyVowelBtn.disabled=true;
     resetKeyboard(false);
-    buyVowelBtn.disabled = (state.players>1) || (state.banks[state.currentPlayer] < state.vowelPrice);
-    spinBtn.disabled = false;
     if(hits===0){ endTurn(); } else { if(allRevealed()) celebrateWin(); }
   }
 
@@ -787,7 +735,7 @@ function drawPreview(){
       // Draw rotated snapshot
       const W=ghostCanvas.width, H=ghostCanvas.height, cx=W/2, cy=H/2;
       gctx.clearRect(0,0,W,H);
-      gctx.save(); gctx.translate(cx,cy); gctx.rotate(rot - startRot);
+      gctx.save(); gctx.translate(cx,cy); gctx.rotate(rot);
       gctx.drawImage(snap, -W/2, -H/2);
       gctx.restore();
 
@@ -806,61 +754,6 @@ function drawPreview(){
       }
     }
     requestAnimationFrame(frame);
-  }
-
-
-  function onSpinComplete(){
-    state.spinning = false;
-    const idx = wedgeAtPointer();
-    const w = wheelWedges[idx];
-    drawPreview(); // ensure peek shows landed wedge
-
-    if(!w){ 
-      // Fallback: allow another spin
-      spinBtn.disabled = false;
-      setStatus(`${CPL()} - spin again.`);
-      return;
-    }
-
-    if(w.type === 'cash'){
-      state.currentCash = w.value || 0;
-      state.canGuessConsonant = true;
-      state.canBuyVowel = false;
-      resetKeyboard(true);
-      buyVowelBtn.disabled = (state.players>1) || (state.banks[state.currentPlayer] < state.vowelPrice);
-      setStatus(`${CPL()} landed on $${dollars(state.currentCash)}. Choose a consonant.`);
-      // keep spin disabled until guess resolves
-    } else if(w.type === 'bankrupt'){
-      state.currentCash = 0;
-      state.banks[state.currentPlayer] = 0;
-      renderPlayers();
-      setStatus(`BANKRUPT! ${state.players>1 ? "Turn passes." : ""}`);
-      endTurn();
-    } else if(w.type === 'lose'){
-      setStatus(`Lose a turn.${state.players>1 ? " Turn passes." : ""}`);
-      endTurn();
-    } else if(w.type === 'clue'){
-      state.currentCash = 0;
-      state.canGuessConsonant = false;
-      state.canBuyVowel = false;
-      resetKeyboard(false);
-      buyVowelBtn.disabled = true;
-      // Open the clue/hint modal (disabled in MP)
-      openClue();
-      // After viewing, allow a new spin (no pass in SP; MP rule doesn't grant extra action)
-      spinBtn.disabled = false;
-      if(state.players>1){
-        // In multiplayer, opening clue is disabled; we still advance turn to keep pace
-        setStatus(`Clue wedge (disabled in multiplayer). Turn passes.`);
-        endTurn();
-      } else {
-        setStatus(`Clue wedge. You may buy the hint ($${state.cluePrice}) or spin again.`);
-      }
-    } else {
-      // Unknown wedge type: just allow spinning again
-      setStatus(`${CPL()} - spin again.`);
-      spinBtn.disabled = false;
-    }
   }
 
 // -------- Clue & Solve --------
@@ -912,16 +805,7 @@ function drawPreview(){
       setStatus(`Incorrect solution by ${CPL()}. Turn passes.`);
     }
   }
-  
-  buyVowelBtn.addEventListener('click', ()=>{
-    if(state.players>1) return;
-    if(state.banks[state.currentPlayer] < state.vowelPrice) return;
-    state.canGuessConsonant = false;
-    state.canBuyVowel = true;
-    resetKeyboard(true);
-    setStatus(`Choose a vowel to buy for $${state.vowelPrice}.`);
-  });
-solveBtn.addEventListener('click', openSolve);
+  solveBtn.addEventListener('click', openSolve);
   submitSolveBtn.addEventListener('click', submitSolve);
   closeSolveBtn.addEventListener('click', ()=>closeSolve(true));
 
@@ -960,20 +844,18 @@ solveBtn.addEventListener('click', openSolve);
     state.cols = BOARD.minCols; state.guessed.clear(); state.cluePurchased=false;
     let source = puzzles;
     let cat = state.selectedCategory || 'RANDOM';
-    if(cat === 'RANDOM' && state.categories && state.categories.length){ cat = state.categories[Math.floor(Math.random()*state.categories.length)]; }
+    if(cat === 'RANDOM' && state.categories && state.categories.length){
+      cat = state.categories[Math.floor(Math.random()*state.categories.length)];
+    }
     if(cat && cat !== 'RANDOM'){
       const filtered = puzzles.filter(p=>p.category===cat);
       if(filtered.length) source = filtered;
     }
-    // Enforce minimum 5 letters in the answer (ignore spaces/punct)
-    let eligible = source.filter(p=>letterCount(p.answer) >= 5);
-    if(!eligible.length){ eligible = puzzles.filter(p=>letterCount(p.answer) >= 5); }
-    if(!eligible.length){ eligible = source; }
-    const idx = (typeof index === "number") ? index : Math.floor(Math.random()*eligible.length);
+    const idx = (typeof index === "number") ? index : Math.floor(Math.random()*source.length);
     state.puzzleIndex = idx;
-    const p = eligible[idx];
+    const p = source[idx];
     state.answer = (p.answer||"").toUpperCase();
-    categoryTopEl.textContent = (p.category ? `Category: ${p.category}` : "Category: —");
+    categoryTopEl.textContent = p.category || "Category";
     layoutBoard(state.answer);
     centerGridRows();
     centerGridVertically();

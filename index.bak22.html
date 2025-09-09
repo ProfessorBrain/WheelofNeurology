@@ -115,18 +115,6 @@ header small{color:var(--muted)}
 .cell.letter:not(.revealed)::before{content:none !important}
 
 
-
-#startModal .dialog{max-width:520px;width:90%;margin:0 auto}
-
-
-#startModal .dialog footer{display:flex;justify-content:center}
-
-
-#startModal .options{flex-wrap:wrap;justify-content:center}
-
-
-/* Brand logo */
-.brand img{height:36px;display:block}
 /* Keyboard */
 .keyboard{display:grid;grid-template-columns:repeat(13,1fr);gap:8px}
 .keyboard button{
@@ -158,17 +146,12 @@ header small{color:var(--muted)}
 .overlayPointer{position:fixed;z-index:65;width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-bottom:26px solid var(--accent);transform:rotate(180deg);pointer-events:none;}
 
 footer{color:var(--muted);text-align:center;padding:6px 0 12px 0}
-
-
-/* Remove dim background/shadow around fullscreen wheel overlay */
-.wheelWrap.fullscreen{background:transparent !important; box-shadow:none !important;}
-
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1 class="brand"><img src="wheelofneurology-logo.png" alt="Wheel of Neurology"></h1>
+    <h1>Wheel of Neurology</h1>
     <small></small>
   </header>
 
